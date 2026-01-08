@@ -1,0 +1,1247 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpenBooks - Historische Bouwkundige Literatuur</title>
+  <meta name="description" content="Gedigitaliseerde oude bouwkundige boeken - vrij toegankelijk voor ingenieurs, architecten en bouwmeesters.">
+  <meta name="keywords" content="bouwkunde, architectuur, constructie, historische boeken, Wattjes, Gugel, OpenAEC">
+  <meta property="og:title" content="OpenBooks - Historische Bouwkundige Literatuur">
+  <meta property="og:description" content="Ontdek de schatten uit het verleden. Gedigitaliseerde boeken over architectuur, constructie en bouwkunde.">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  
+  <!-- React -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+  
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: #0F0C08;
+      color: #F5E6D3;
+      overflow-x: hidden;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    @keyframes slideUp {
+      from { 
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to { 
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: rgba(139, 115, 85, 0.1);
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: rgba(139, 115, 85, 0.3);
+      border-radius: 4px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(139, 115, 85, 0.5);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .header-inner {
+        flex-direction: column;
+        gap: 1rem;
+        padding: 1rem !important;
+      }
+      .search-bar {
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+      .hero-stats {
+        flex-direction: column;
+        gap: 1.5rem !important;
+      }
+      .books-grid {
+        padding: 1rem !important;
+      }
+      .category-filter {
+        padding: 0 1rem !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // GitHub raw URL base voor afbeeldingen
+    const GITHUB_RAW = "https://raw.githubusercontent.com/OpenAEC-Foundation/OpenBooks/main";
+
+    // Boeken data gebaseerd op de echte OpenBooks collectie
+    const booksData = [
+      {
+        id: 1,
+        title: "Architectonische Vormenleer",
+        author: "Prof. E.H. Gugel",
+        year: "1880",
+        category: "Architectuur",
+        pages: 48,
+        folder: "Prof. E.H. Gugel Architectonische Vormenleer 1880",
+        description: "Platen met architectonische vormen en ornamenten",
+        coverColor: "#8B7355",
+        coverImage: `${GITHUB_RAW}/OpeningImage.JPG`,
+        hasOCR: false
+      },
+      {
+        id: 2,
+        title: "Constructies van Gebouwen Deel 1",
+        subtitle: "Muren en aangebouwde schoorsteenen",
+        author: "Prof. J.G. Wattjes",
+        year: "1920",
+        category: "Constructie",
+        pages: 156,
+        folder: "Prof. J.G. Wattjes Deel 1 Muren en aangebouwde schoorsteenen",
+        description: "Fundamentele constructieprincipes voor metselwerk",
+        coverColor: "#4A5568",
+        coverImage: `${GITHUB_RAW}/OpeningImageWattjes1.JPG`,
+        hasOCR: false
+      },
+      {
+        id: 3,
+        title: "Constructies van Gebouwen Deel 4",
+        subtitle: "Ramen, Deuren, Kozijnen",
+        author: "Prof. J.G. Wattjes",
+        year: "1920",
+        category: "Constructie",
+        pages: 198,
+        folder: "Prof. J.G. Wattjes Deel 4 Ramen Deuren Kozijnen",
+        description: "Gedetailleerde constructies voor houtwerk",
+        coverColor: "#744210",
+        coverImage: `${GITHUB_RAW}/OpeningImageWattjes4.jpg`,
+        hasOCR: false
+      },
+      {
+        id: 4,
+        title: "Berekening van Constructies I",
+        author: "Prof. D. Vandepitte",
+        year: "1960",
+        category: "Berekeningen",
+        pages: 312,
+        folder: "Prof. D. Vandepitte Berekening van Constructies Boekdeel I",
+        description: "Statische en dynamische berekeningen",
+        coverColor: "#2D3748",
+        coverImage: `${GITHUB_RAW}/OpeningImagePitte.jpg`,
+        hasOCR: true
+      },
+      {
+        id: 5,
+        title: "Staalconstructies",
+        subtitle: "Theorie, berekening en uitvoering",
+        author: "Ir. A.P. Potma & Ir. J.E. de Vries",
+        year: "1965",
+        category: "Staal",
+        pages: 428,
+        folder: "Ir A.P. Potma en Ir J.E. de Vries Staalconstructies, theorie, berekening en uitvoering",
+        description: "Compleet handboek staalconstructies",
+        coverColor: "#1A365D",
+        coverImage: `${GITHUB_RAW}/OpeningImagePotma.jpg`,
+        hasOCR: false
+      },
+      {
+        id: 6,
+        title: "Handboek Houtconstructies",
+        author: "Arch. L. Zwiers",
+        year: "1948",
+        category: "Hout",
+        pages: 276,
+        folder: "L. Zwiers Houtconstructies Handboek",
+        description: "Uitgebreide handleiding voor houtconstructies",
+        coverColor: "#5D4037",
+        coverImage: `${GITHUB_RAW}/OpeningImageZwiers.png`,
+        hasOCR: false
+      },
+      {
+        id: 7,
+        title: "Gewapend Beton Voorschriften",
+        subtitle: "G.B.V. 1950",
+        author: "Nederlandse Norm",
+        year: "1950",
+        category: "Voorschriften",
+        pages: 84,
+        folder: "1950 G.B.V. Gewapend Beton Voorschriften",
+        description: "Historische betonvoorschriften",
+        coverColor: "#37474F",
+        coverImage: `${GITHUB_RAW}/OpeningImage3.JPG`,
+        hasOCR: true
+      },
+      {
+        id: 8,
+        title: "Cort onderwys VANDE VYF COLOMMEN",
+        author: "Symon Bosboom",
+        year: "1670",
+        category: "Klassiek",
+        pages: 32,
+        folder: "Stadssteenhouwer Symon Bosboom Cort onderwys VANDE VYF COLOMMEN",
+        description: "17e eeuws traktaat over de vijf orden",
+        coverColor: "#3E2723",
+        coverImage: `${GITHUB_RAW}/OpeningImageBosboom1.jpg`,
+        hasOCR: false
+      },
+      {
+        id: 9,
+        title: "Constructies van Gebouwen Deel 3",
+        subtitle: "Funderingen en Kelders Rioleeringen",
+        author: "Prof. J.G. Wattjes",
+        year: "1920",
+        category: "Constructie",
+        pages: 142,
+        folder: "Prof. J.G. Wattjes Deel 3 Funderingen en Kelders Rioleeringen",
+        description: "Fundamentele constructies voor funderingen",
+        coverColor: "#5D4E37",
+        coverImage: `${GITHUB_RAW}/OpeningImageWattjes3.JPG`,
+        hasOCR: false
+      },
+      {
+        id: 10,
+        title: "Constructies van Gebouwen Deel 8",
+        subtitle: "Trappen van hout, ijzer, steen en gewapend beton",
+        author: "Prof. J.G. Wattjes",
+        year: "1920",
+        category: "Constructie",
+        pages: 168,
+        folder: "Prof. J.G. Wattjes Deel 8 Trappen van hout, ijzer, steen en gewapend beton roltrappen liften",
+        description: "Uitgebreide behandeling van trapconstructies",
+        coverColor: "#4A4035",
+        coverImage: `${GITHUB_RAW}/OpeningImageWattjes8.jpg`,
+        hasOCR: false
+      },
+      {
+        id: 11,
+        title: "Constructies van Gebouwen Deel 9",
+        subtitle: "Eenvoudige dakconstructies en dakbedekkingen",
+        author: "Prof. J.G. Wattjes",
+        year: "1920",
+        category: "Constructie",
+        pages: 134,
+        folder: "Prof. J.G. Wattjes Deel 9 Eenvoudige dakconstructies en dakbedekkingen",
+        description: "Diverse dakconstructies en materialen",
+        coverColor: "#3D3428",
+        coverImage: `${GITHUB_RAW}/OpeningImageWattjes9.jpg`,
+        hasOCR: false
+      },
+      {
+        id: 12,
+        title: "Paneeldeuren",
+        author: "Onbekend",
+        year: "ca. 1920",
+        category: "Hout",
+        pages: 24,
+        folder: "Paneeldeuren",
+        description: "Detailtekeningen van klassieke paneeldeuren",
+        coverColor: "#6B5344",
+        coverImage: `${GITHUB_RAW}/OpeningImagePaneeldeur.png`,
+        hasOCR: false
+      }
+    ];
+
+    // Genereer mock pagina's voor de book viewer
+    const generateMockPages = (bookId, pageCount) => {
+      return Array.from({ length: Math.min(pageCount, 12) }, (_, i) => ({
+        number: i + 1,
+        hasText: Math.random() > 0.3
+      }));
+    };
+
+    function OpenBooksWebsite() {
+      const [selectedBook, setSelectedBook] = useState(null);
+      const [currentPage, setCurrentPage] = useState(0);
+      const [searchQuery, setSearchQuery] = useState('');
+      const [activeCategory, setActiveCategory] = useState('Alle');
+
+      const categories = ['Alle', 'Architectuur', 'Constructie', 'Berekeningen', 'Staal', 'Hout', 'Voorschriften', 'Klassiek'];
+
+      const filteredBooks = booksData.filter(book => {
+        const matchesCategory = activeCategory === 'Alle' || book.category === activeCategory;
+        const matchesSearch = book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                             book.author.toLowerCase().includes(searchQuery.toLowerCase());
+        return matchesCategory && matchesSearch;
+      });
+
+      // Book Viewer Component
+      const BookViewer = ({ book, onClose }) => {
+        const pages = generateMockPages(book.id, book.pages);
+        const [pageImageLoaded, setPageImageLoaded] = useState(false);
+
+        useEffect(() => {
+          const handleKeyDown = (e) => {
+            if (e.key === 'Escape') onClose();
+            if (e.key === 'ArrowRight') setCurrentPage(p => Math.min(p + 1, pages.length - 1));
+            if (e.key === 'ArrowLeft') setCurrentPage(p => Math.max(p - 1, 0));
+          };
+          window.addEventListener('keydown', handleKeyDown);
+          return () => window.removeEventListener('keydown', handleKeyDown);
+        }, [pages.length, onClose]);
+
+        useEffect(() => {
+          setPageImageLoaded(false);
+        }, [currentPage]);
+
+        return (
+          <div style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 12, 8, 0.98)',
+            zIndex: 100,
+            display: 'flex',
+            flexDirection: 'column',
+            animation: 'fadeIn 0.4s ease'
+          }}>
+            {/* Viewer Header */}
+            <header style={{
+              padding: '1rem 2rem',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              borderBottom: '1px solid rgba(139, 115, 85, 0.3)',
+              background: 'linear-gradient(180deg, rgba(30, 25, 18, 0.9) 0%, transparent 100%)',
+              flexWrap: 'wrap',
+              gap: '1rem'
+            }}>
+              <div>
+                <h2 style={{
+                  fontFamily: '"Playfair Display", Georgia, serif',
+                  color: '#F5E6D3',
+                  fontSize: '1.5rem',
+                  margin: 0
+                }}>{book.title}</h2>
+                <p style={{ color: '#A89070', margin: '0.25rem 0 0', fontSize: '0.9rem' }}>
+                  {book.author} · {book.year}
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                {/* GitHub link naar map */}
+                <a
+                  href={`https://github.com/OpenAEC-Foundation/OpenBooks/tree/main/${encodeURIComponent(book.folder)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.5rem 1rem',
+                    background: 'rgba(139, 115, 85, 0.2)',
+                    borderRadius: '2rem',
+                    border: '1px solid rgba(139, 115, 85, 0.3)',
+                    color: '#F5E6D3',
+                    textDecoration: 'none',
+                    fontSize: '0.8rem',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                  </svg>
+                  Bekijk alle scans
+                </a>
+                {/* OCR indicator */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.5rem 1rem',
+                  background: book.hasOCR ? 'rgba(72, 187, 120, 0.15)' : 'rgba(139, 115, 85, 0.15)',
+                  borderRadius: '2rem',
+                  border: `1px solid ${book.hasOCR ? 'rgba(72, 187, 120, 0.3)' : 'rgba(139, 115, 85, 0.3)'}`
+                }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={book.hasOCR ? '#48BB78' : '#8B7355'} strokeWidth="2">
+                    <circle cx="11" cy="11" r="8"/>
+                    <path d="m21 21-4.35-4.35"/>
+                  </svg>
+                  <span style={{ fontSize: '0.8rem', color: book.hasOCR ? '#48BB78' : '#A89070' }}>
+                    {book.hasOCR ? 'OCR beschikbaar' : 'OCR binnenkort'}
+                  </span>
+                </div>
+                <button
+                  onClick={onClose}
+                  style={{
+                    background: 'rgba(139, 115, 85, 0.2)',
+                    border: '1px solid rgba(139, 115, 85, 0.3)',
+                    color: '#F5E6D3',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '0.5rem',
+                    cursor: 'pointer',
+                    fontFamily: '"DM Sans", sans-serif',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  ✕ Sluiten
+                </button>
+              </div>
+            </header>
+
+            {/* Page Navigator Strip */}
+            <div style={{
+              padding: '1rem 2rem',
+              background: 'rgba(20, 16, 10, 0.8)',
+              borderBottom: '1px solid rgba(139, 115, 85, 0.2)'
+            }}>
+              <div style={{
+                display: 'flex',
+                gap: '0.5rem',
+                overflowX: 'auto',
+                paddingBottom: '0.5rem'
+              }}>
+                {pages.map((page, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setCurrentPage(idx)}
+                    style={{
+                      minWidth: '48px',
+                      height: '64px',
+                      background: currentPage === idx 
+                        ? 'linear-gradient(135deg, #8B7355 0%, #6B5344 100%)'
+                        : 'rgba(245, 230, 211, 0.08)',
+                      border: currentPage === idx 
+                        ? '2px solid #A89070'
+                        : '1px solid rgba(139, 115, 85, 0.3)',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.2s',
+                      transform: currentPage === idx ? 'scale(1.1)' : 'scale(1)'
+                    }}
+                  >
+                    <span style={{ 
+                      color: currentPage === idx ? '#FFF' : '#A89070',
+                      fontSize: '0.7rem',
+                      fontWeight: 600
+                    }}>
+                      {page.number}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Main Page View */}
+            <div style={{
+              flex: 1,
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              padding: '2rem',
+              overflow: 'auto'
+            }}>
+              <div style={{
+                width: '100%',
+                maxWidth: '800px',
+                aspectRatio: '3/4',
+                background: 'linear-gradient(135deg, #F5E6D3 0%, #E8D5C4 50%, #DCC9B8 100%)',
+                borderRadius: '4px',
+                boxShadow: '-8px 0 20px rgba(0,0,0,0.3), 8px 0 20px rgba(0,0,0,0.3), 0 20px 60px rgba(0,0,0,0.5)',
+                display: 'flex',
+                flexDirection: 'column',
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                {/* Page texture overlay */}
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  background: 'repeating-linear-gradient(0deg, transparent, transparent 28px, rgba(139, 115, 85, 0.05) 28px, rgba(139, 115, 85, 0.05) 29px)',
+                  pointerEvents: 'none'
+                }} />
+                
+                {/* Book spine shadow */}
+                <div style={{
+                  position: 'absolute',
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: '30px',
+                  background: 'linear-gradient(90deg, rgba(0,0,0,0.15) 0%, transparent 100%)',
+                  pointerEvents: 'none'
+                }} />
+
+                {/* Page content area */}
+                <div style={{
+                  flex: 1,
+                  padding: '2rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  overflow: 'hidden'
+                }}>
+                  {currentPage === 0 && book.coverImage ? (
+                    <div style={{
+                      width: '100%',
+                      height: '100%',
+                      position: 'relative',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      <img
+                        src={book.coverImage}
+                        alt={`Pagina ${pages[currentPage]?.number} uit ${book.title}`}
+                        onLoad={() => setPageImageLoaded(true)}
+                        style={{
+                          maxWidth: '100%',
+                          maxHeight: '100%',
+                          objectFit: 'contain',
+                          borderRadius: '4px',
+                          boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                          opacity: pageImageLoaded ? 1 : 0,
+                          transition: 'opacity 0.3s ease'
+                        }}
+                      />
+                      {!pageImageLoaded && (
+                        <div style={{
+                          position: 'absolute',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}>
+                          <div style={{
+                            width: '40px',
+                            height: '40px',
+                            border: '3px solid rgba(139, 115, 85, 0.2)',
+                            borderTopColor: '#8B7355',
+                            borderRadius: '50%',
+                            animation: 'spin 1s linear infinite'
+                          }} />
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div style={{
+                      width: '100%',
+                      height: '100%',
+                      background: 'rgba(139, 115, 85, 0.1)',
+                      borderRadius: '2px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      border: '1px dashed rgba(139, 115, 85, 0.3)'
+                    }}>
+                      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#8B7355" strokeWidth="1.5" style={{ opacity: 0.5 }}>
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                        <circle cx="8.5" cy="8.5" r="1.5"/>
+                        <polyline points="21 15 16 10 5 21"/>
+                      </svg>
+                      <p style={{
+                        color: '#8B7355',
+                        fontFamily: '"DM Sans", sans-serif',
+                        marginTop: '1rem',
+                        opacity: 0.7,
+                        textAlign: 'center'
+                      }}>
+                        Bekijk alle scans op GitHub
+                      </p>
+                      <a
+                        href={`https://github.com/OpenAEC-Foundation/OpenBooks/tree/main/${encodeURIComponent(book.folder)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          marginTop: '1rem',
+                          padding: '0.5rem 1rem',
+                          background: '#8B7355',
+                          color: '#FFF',
+                          borderRadius: '4px',
+                          textDecoration: 'none',
+                          fontSize: '0.85rem'
+                        }}
+                      >
+                        Open in GitHub →
+                      </a>
+                    </div>
+                  )}
+                </div>
+
+                {/* Page number */}
+                <div style={{
+                  padding: '1rem',
+                  textAlign: 'center',
+                  borderTop: '1px solid rgba(139, 115, 85, 0.2)'
+                }}>
+                  <span style={{
+                    fontFamily: '"Playfair Display", Georgia, serif',
+                    color: '#6B5344',
+                    fontSize: '0.9rem'
+                  }}>
+                    — {pages[currentPage]?.number} —
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Navigation arrows */}
+            <button
+              onClick={() => setCurrentPage(p => Math.max(p - 1, 0))}
+              disabled={currentPage === 0}
+              style={{
+                position: 'absolute',
+                left: '2rem',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                width: '48px',
+                height: '48px',
+                borderRadius: '50%',
+                background: currentPage === 0 ? 'rgba(139, 115, 85, 0.1)' : 'rgba(139, 115, 85, 0.3)',
+                border: 'none',
+                cursor: currentPage === 0 ? 'default' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s'
+              }}
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" 
+                   stroke={currentPage === 0 ? '#6B5344' : '#F5E6D3'} strokeWidth="2">
+                <polyline points="15 18 9 12 15 6"/>
+              </svg>
+            </button>
+            <button
+              onClick={() => setCurrentPage(p => Math.min(p + 1, pages.length - 1))}
+              disabled={currentPage === pages.length - 1}
+              style={{
+                position: 'absolute',
+                right: '2rem',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                width: '48px',
+                height: '48px',
+                borderRadius: '50%',
+                background: currentPage === pages.length - 1 ? 'rgba(139, 115, 85, 0.1)' : 'rgba(139, 115, 85, 0.3)',
+                border: 'none',
+                cursor: currentPage === pages.length - 1 ? 'default' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s'
+              }}
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" 
+                   stroke={currentPage === pages.length - 1 ? '#6B5344' : '#F5E6D3'} strokeWidth="2">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </button>
+          </div>
+        );
+      };
+
+      // Book Card Component
+      const BookCard = ({ book, index }) => {
+        const [imageLoaded, setImageLoaded] = useState(false);
+        const [imageError, setImageError] = useState(false);
+        const [isHovered, setIsHovered] = useState(false);
+
+        return (
+          <div
+            onClick={() => {
+              setSelectedBook(book);
+              setCurrentPage(0);
+            }}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            style={{
+              background: 'linear-gradient(145deg, rgba(30, 25, 18, 0.9) 0%, rgba(20, 16, 10, 0.95) 100%)',
+              borderRadius: '12px',
+              overflow: 'hidden',
+              cursor: 'pointer',
+              transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+              border: '1px solid rgba(139, 115, 85, 0.2)',
+              animation: `slideUp 0.6s ease ${index * 0.1}s both`,
+              transform: isHovered ? 'translateY(-8px) scale(1.02)' : 'translateY(0) scale(1)',
+              boxShadow: isHovered ? '0 20px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(139, 115, 85, 0.3)' : 'none'
+            }}
+          >
+            {/* Book Cover Visual with Image */}
+            <div style={{
+              height: '240px',
+              background: `linear-gradient(135deg, ${book.coverColor} 0%, ${book.coverColor}dd 100%)`,
+              position: 'relative',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'hidden'
+            }}>
+              {book.coverImage && !imageError && (
+                <img
+                  src={book.coverImage}
+                  alt={`Pagina uit ${book.title}`}
+                  onLoad={() => setImageLoaded(true)}
+                  onError={() => setImageError(true)}
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    objectPosition: 'center top',
+                    opacity: imageLoaded ? 1 : 0,
+                    transition: 'opacity 0.5s ease'
+                  }}
+                />
+              )}
+
+              <div style={{
+                position: 'absolute',
+                inset: 0,
+                background: imageLoaded && !imageError
+                  ? 'linear-gradient(0deg, rgba(15, 12, 8, 0.95) 0%, rgba(15, 12, 8, 0.4) 40%, rgba(15, 12, 8, 0.1) 70%, transparent 100%)'
+                  : 'none',
+                zIndex: 2
+              }} />
+
+              {(!imageLoaded || imageError) && (
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  background: 'linear-gradient(90deg, rgba(0,0,0,0.3) 0%, transparent 5%, transparent 95%, rgba(0,0,0,0.2) 100%)'
+                }} />
+              )}
+              
+              <div style={{
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: '20px',
+                background: 'linear-gradient(90deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.2) 50%, transparent 100%)',
+                zIndex: 3
+              }} />
+
+              {imageLoaded && !imageError && (
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  boxShadow: 'inset 0 0 60px rgba(0,0,0,0.4)',
+                  zIndex: 2,
+                  pointerEvents: 'none'
+                }} />
+              )}
+
+              <div style={{
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                padding: '1.5rem',
+                zIndex: 4
+              }}>
+                <h3 style={{
+                  fontFamily: '"Playfair Display", Georgia, serif',
+                  color: '#FFF',
+                  fontSize: '1.1rem',
+                  fontWeight: 600,
+                  textShadow: '0 2px 8px rgba(0,0,0,0.8)',
+                  lineHeight: 1.3,
+                  margin: 0
+                }}>
+                  {book.title}
+                </h3>
+                {book.subtitle && (
+                  <p style={{
+                    fontFamily: '"DM Sans", sans-serif',
+                    color: 'rgba(255,255,255,0.8)',
+                    fontSize: '0.75rem',
+                    marginTop: '0.5rem',
+                    textShadow: '0 1px 4px rgba(0,0,0,0.8)'
+                  }}>
+                    {book.subtitle}
+                  </p>
+                )}
+              </div>
+
+              {book.hasOCR && (
+                <div style={{
+                  position: 'absolute',
+                  top: '12px',
+                  right: '12px',
+                  background: 'rgba(72, 187, 120, 0.9)',
+                  color: '#FFF',
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                  fontSize: '0.65rem',
+                  fontWeight: 600,
+                  fontFamily: '"DM Sans", sans-serif',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  zIndex: 5,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
+                }}>
+                  OCR
+                </div>
+              )}
+
+              {!imageLoaded && !imageError && book.coverImage && (
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 1
+                }}>
+                  <div style={{
+                    width: '32px',
+                    height: '32px',
+                    border: '3px solid rgba(245, 230, 211, 0.2)',
+                    borderTopColor: '#F5E6D3',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite'
+                  }} />
+                </div>
+              )}
+            </div>
+
+            <div style={{ padding: '1.25rem' }}>
+              <p style={{
+                fontFamily: '"DM Sans", sans-serif',
+                color: '#A89070',
+                fontSize: '0.85rem',
+                margin: '0 0 0.5rem'
+              }}>
+                {book.author}
+              </p>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}>
+                <span style={{
+                  fontFamily: '"Playfair Display", Georgia, serif',
+                  color: '#6B5344',
+                  fontSize: '0.9rem'
+                }}>
+                  {book.year}
+                </span>
+                <span style={{
+                  fontFamily: '"DM Sans", sans-serif',
+                  color: '#6B5344',
+                  fontSize: '0.75rem',
+                  background: 'rgba(139, 115, 85, 0.15)',
+                  padding: '4px 10px',
+                  borderRadius: '12px'
+                }}>
+                  {book.pages} pagina's
+                </span>
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+      return (
+        <div style={{
+          minHeight: '100vh',
+          background: 'linear-gradient(180deg, #0F0C08 0%, #1A1510 50%, #0F0C08 100%)',
+          fontFamily: '"DM Sans", sans-serif'
+        }}>
+          {/* Header */}
+          <header className="header-inner" style={{
+            padding: '2rem 4rem',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            borderBottom: '1px solid rgba(139, 115, 85, 0.15)',
+            position: 'sticky',
+            top: 0,
+            zIndex: 50,
+            background: 'linear-gradient(180deg, rgba(15, 12, 8, 0.98) 0%, rgba(15, 12, 8, 0.9) 100%)',
+            backdropFilter: 'blur(20px)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div style={{
+                width: '48px',
+                height: '48px',
+                background: 'linear-gradient(135deg, #8B7355 0%, #6B5344 100%)',
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 12px rgba(139, 115, 85, 0.3)'
+              }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#F5E6D3" strokeWidth="2">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                </svg>
+              </div>
+              <div>
+                <h1 style={{
+                  fontFamily: '"Playfair Display", Georgia, serif',
+                  color: '#F5E6D3',
+                  fontSize: '1.75rem',
+                  fontWeight: 600,
+                  letterSpacing: '-0.02em'
+                }}>
+                  OpenBooks
+                </h1>
+                <p style={{
+                  color: '#6B5344',
+                  fontSize: '0.75rem',
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  marginTop: '2px'
+                }}>
+                  OpenAEC Foundation
+                </p>
+              </div>
+            </div>
+
+            <div className="search-bar" style={{ position: 'relative', width: '400px', maxWidth: '100%' }}>
+              <input
+                type="text"
+                placeholder="Zoek in boeken..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.875rem 1rem 0.875rem 3rem',
+                  background: 'rgba(139, 115, 85, 0.1)',
+                  border: '1px solid rgba(139, 115, 85, 0.2)',
+                  borderRadius: '12px',
+                  color: '#F5E6D3',
+                  fontFamily: '"DM Sans", sans-serif',
+                  fontSize: '0.9rem',
+                  outline: 'none'
+                }}
+              />
+              <svg 
+                width="20" height="20" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="#8B7355" 
+                strokeWidth="2"
+                style={{
+                  position: 'absolute',
+                  left: '1rem',
+                  top: '50%',
+                  transform: 'translateY(-50%)'
+                }}
+              >
+                <circle cx="11" cy="11" r="8"/>
+                <path d="m21 21-4.35-4.35"/>
+              </svg>
+            </div>
+
+            <a 
+              href="https://github.com/OpenAEC-Foundation/OpenBooks" 
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                color: '#A89070',
+                textDecoration: 'none',
+                padding: '0.75rem 1.25rem',
+                background: 'rgba(139, 115, 85, 0.1)',
+                borderRadius: '8px',
+                border: '1px solid rgba(139, 115, 85, 0.2)'
+              }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="#A89070">
+                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+              </svg>
+              <span style={{ fontWeight: 500 }}>GitHub</span>
+            </a>
+          </header>
+
+          {/* Hero Section */}
+          <section style={{
+            padding: '4rem',
+            textAlign: 'center',
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'radial-gradient(ellipse at 20% 50%, rgba(139, 115, 85, 0.08) 0%, transparent 50%), radial-gradient(ellipse at 80% 50%, rgba(139, 115, 85, 0.05) 0%, transparent 50%)',
+              pointerEvents: 'none'
+            }} />
+
+            <h2 style={{
+              fontFamily: '"Playfair Display", Georgia, serif',
+              color: '#F5E6D3',
+              fontSize: '3rem',
+              fontWeight: 600,
+              marginBottom: '1rem',
+              animation: 'slideUp 0.8s ease'
+            }}>
+              Historische Bouwkundige Literatuur
+            </h2>
+            <p style={{
+              color: '#A89070',
+              fontSize: '1.1rem',
+              maxWidth: '600px',
+              margin: '0 auto 2rem',
+              lineHeight: 1.7,
+              animation: 'slideUp 0.8s ease 0.1s both'
+            }}>
+              Ontdek de schatten uit het verleden. Gedigitaliseerde boeken over architectuur, 
+              constructie en bouwkunde — vrij toegankelijk voor ingenieurs, architecten en bouwmeesters.
+            </p>
+
+            <div className="hero-stats" style={{
+              display: 'flex',
+              justifyContent: 'center',
+              gap: '3rem',
+              animation: 'slideUp 0.8s ease 0.2s both'
+            }}>
+              {[
+                { value: '25+', label: 'Boeken' },
+                { value: '3.000+', label: "Pagina's" },
+                { value: '1670-1974', label: 'Periode' }
+              ].map((stat, i) => (
+                <div key={i} style={{ textAlign: 'center' }}>
+                  <div style={{
+                    fontFamily: '"Playfair Display", Georgia, serif',
+                    color: '#8B7355',
+                    fontSize: '2rem',
+                    fontWeight: 600
+                  }}>
+                    {stat.value}
+                  </div>
+                  <div style={{
+                    color: '#6B5344',
+                    fontSize: '0.85rem',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.1em'
+                  }}>
+                    {stat.label}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Category Filter */}
+          <section className="category-filter" style={{
+            padding: '0 4rem 2rem',
+            display: 'flex',
+            justifyContent: 'center',
+            gap: '0.5rem',
+            flexWrap: 'wrap'
+          }}>
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                style={{
+                  padding: '0.625rem 1.25rem',
+                  background: activeCategory === cat 
+                    ? 'linear-gradient(135deg, #8B7355 0%, #6B5344 100%)'
+                    : 'transparent',
+                  border: activeCategory === cat 
+                    ? 'none'
+                    : '1px solid rgba(139, 115, 85, 0.3)',
+                  borderRadius: '24px',
+                  color: activeCategory === cat ? '#FFF' : '#A89070',
+                  fontFamily: '"DM Sans", sans-serif',
+                  fontSize: '0.85rem',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  transition: 'all 0.3s'
+                }}
+              >
+                {cat}
+              </button>
+            ))}
+          </section>
+
+          {/* Books Grid */}
+          <section className="books-grid" style={{
+            padding: '2rem 4rem 4rem',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+            gap: '2rem',
+            maxWidth: '1400px',
+            margin: '0 auto'
+          }}>
+            {filteredBooks.map((book, index) => (
+              <BookCard key={book.id} book={book} index={index} />
+            ))}
+          </section>
+
+          {/* OCR Feature Teaser */}
+          <section style={{
+            padding: '4rem',
+            background: 'linear-gradient(180deg, rgba(139, 115, 85, 0.05) 0%, transparent 100%)',
+            borderTop: '1px solid rgba(139, 115, 85, 0.1)'
+          }}>
+            <div style={{
+              maxWidth: '800px',
+              margin: '0 auto',
+              textAlign: 'center'
+            }}>
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                background: 'rgba(72, 187, 120, 0.1)',
+                border: '1px solid rgba(72, 187, 120, 0.3)',
+                borderRadius: '24px',
+                padding: '0.5rem 1rem',
+                marginBottom: '1.5rem'
+              }}>
+                <span style={{
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  background: '#48BB78',
+                  animation: 'float 2s ease-in-out infinite'
+                }} />
+                <span style={{ color: '#48BB78', fontSize: '0.85rem', fontWeight: 500 }}>
+                  Binnenkort: Volledige OCR Tekstherkenning
+                </span>
+              </div>
+              
+              <h3 style={{
+                fontFamily: '"Playfair Display", Georgia, serif',
+                color: '#F5E6D3',
+                fontSize: '2rem',
+                marginBottom: '1rem'
+              }}>
+                Doorzoek de Volledige Tekst
+              </h3>
+              <p style={{
+                color: '#A89070',
+                lineHeight: 1.7,
+                marginBottom: '2rem'
+              }}>
+                We werken aan OCR-tekstherkenning voor alle gescande pagina's. 
+                Straks kun je zoeken naar specifieke termen, formules en constructiedetails 
+                direct in de originele tekst van deze historische werken.
+              </p>
+              
+              <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                gap: '2rem',
+                flexWrap: 'wrap'
+              }}>
+                {[
+                  { icon: '🔍', title: 'Zoek in tekst', desc: 'Vind specifieke passages' },
+                  { icon: '📋', title: 'Kopieer tekst', desc: 'Citeer uit originele bronnen' },
+                  { icon: '🌐', title: 'Vindbaarheid', desc: 'Geïndexeerd door zoekmachines' }
+                ].map((feature, i) => (
+                  <div key={i} style={{ textAlign: 'center', minWidth: '150px' }}>
+                    <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>{feature.icon}</div>
+                    <div style={{ color: '#F5E6D3', fontWeight: 500, marginBottom: '0.25rem' }}>
+                      {feature.title}
+                    </div>
+                    <div style={{ color: '#6B5344', fontSize: '0.85rem' }}>
+                      {feature.desc}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* Footer */}
+          <footer style={{
+            padding: '3rem 4rem',
+            borderTop: '1px solid rgba(139, 115, 85, 0.15)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '1rem'
+          }}>
+            <div>
+              <p style={{ color: '#6B5344', fontSize: '0.85rem' }}>
+                © {new Date().getFullYear()} OpenAEC Foundation
+              </p>
+              <p style={{ color: '#4A3F32', fontSize: '0.75rem', marginTop: '0.25rem' }}>
+                Deze boeken zijn voor zover te achterhalen vrij van rechten.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '1.5rem' }}>
+              <a href="mailto:maarten@3bm.co.nl" style={{
+                color: '#A89070',
+                textDecoration: 'none',
+                fontSize: '0.85rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                  <polyline points="22,6 12,13 2,6"/>
+                </svg>
+                Contact
+              </a>
+              <a href="https://github.com/OpenAEC-Foundation/OpenBooks" target="_blank" rel="noopener noreferrer" style={{
+                color: '#A89070',
+                textDecoration: 'none',
+                fontSize: '0.85rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                </svg>
+                Bijdragen
+              </a>
+            </div>
+          </footer>
+
+          {/* Book Viewer Modal */}
+          {selectedBook && (
+            <BookViewer 
+              book={selectedBook} 
+              onClose={() => setSelectedBook(null)} 
+            />
+          )}
+        </div>
+      );
+    }
+
+    ReactDOM.render(<OpenBooksWebsite />, document.getElementById('root'));
+  </script>
+</body>
+</html>
