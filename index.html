@@ -278,12 +278,31 @@
       }
     ];
 
-    // Genereer mock pagina's voor de book viewer
-    const generateMockPages = (bookId, pageCount) => {
-      return Array.from({ length: Math.min(pageCount, 12) }, (_, i) => ({
-        number: i + 1,
-        hasText: Math.random() > 0.3
-      }));
+    // Haal bestanden op van GitHub API
+    const fetchGitHubFiles = async (folder) => {
+      try {
+        const response = await fetch(
+          `https://api.github.com/repos/OpenAEC-Foundation/OpenBooks/contents/${encodeURIComponent(folder)}`
+        );
+        if (!response.ok) throw new Error('Failed to fetch');
+        const files = await response.json();
+        return files
+          .filter(f => f.type === 'file' && /\.(jpg|jpeg|png|gif)$/i.test(f.name))
+          .sort((a, b) => {
+            // Sorteer numeriek als mogelijk
+            const numA = parseInt(a.name.match(/\d+/)?.[0] || '0');
+            const numB = parseInt(b.name.match(/\d+/)?.[0] || '0');
+            return numA - numB;
+          })
+          .map((f, i) => ({
+            number: i + 1,
+            name: f.name,
+            url: `${GITHUB_RAW}/${encodeURIComponent(folder)}/${encodeURIComponent(f.name)}`
+          }));
+      } catch (error) {
+        console.error('Error fetching files:', error);
+        return [];
+      }
     };
 
     function OpenBooksWebsite() {
@@ -303,8 +322,18 @@
 
       // Book Viewer Component
       const BookViewer = ({ book, onClose }) => {
-        const pages = generateMockPages(book.id, book.pages);
+        const [pages, setPages] = useState([]);
+        const [loading, setLoading] = useState(true);
         const [pageImageLoaded, setPageImageLoaded] = useState(false);
+
+        // Laad bestanden van GitHub API
+        useEffect(() => {
+          setLoading(true);
+          fetchGitHubFiles(book.folder).then(files => {
+            setPages(files);
+            setLoading(false);
+          });
+        }, [book.folder]);
 
         useEffect(() => {
           const handleKeyDown = (e) => {
@@ -510,7 +539,24 @@
                   justifyContent: 'center',
                   overflow: 'hidden'
                 }}>
-                  {currentPage === 0 && book.coverImage ? (
+                  {loading ? (
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '1rem'
+                    }}>
+                      <div style={{
+                        width: '50px',
+                        height: '50px',
+                        border: '3px solid rgba(139, 115, 85, 0.2)',
+                        borderTopColor: '#8B7355',
+                        borderRadius: '50%',
+                        animation: 'spin 1s linear infinite'
+                      }} />
+                      <p style={{ color: '#A89070' }}>Laden van scans...</p>
+                    </div>
+                  ) : pages.length > 0 && pages[currentPage] ? (
                     <div style={{
                       width: '100%',
                       height: '100%',
@@ -520,8 +566,8 @@
                       justifyContent: 'center'
                     }}>
                       <img
-                        src={book.coverImage}
-                        alt={`Pagina ${pages[currentPage]?.number} uit ${book.title}`}
+                        src={pages[currentPage].url}
+                        alt={`${pages[currentPage].name} uit ${book.title}`}
                         onLoad={() => setPageImageLoaded(true)}
                         style={{
                           maxWidth: '100%',
@@ -575,7 +621,7 @@
                         opacity: 0.7,
                         textAlign: 'center'
                       }}>
-                        Bekijk alle scans op GitHub
+                        Geen scans gevonden of te veel bestanden
                       </p>
                       <a
                         href={`https://github.com/OpenAEC-Foundation/OpenBooks/tree/main/${encodeURIComponent(book.folder)}`}
@@ -608,8 +654,13 @@
                     color: '#6B5344',
                     fontSize: '0.9rem'
                   }}>
-                    — {pages[currentPage]?.number} —
+                    — Pagina {currentPage + 1} van {pages.length} —
                   </span>
+                  {pages[currentPage]?.name && (
+                    <div style={{ color: '#5A4A3A', fontSize: '0.75rem', marginTop: '0.25rem' }}>
+                      {pages[currentPage].name}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
