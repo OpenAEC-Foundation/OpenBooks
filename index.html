@@ -421,9 +421,38 @@
     function App() {
       const [selectedBook, setSelectedBook] = useState(null);
       const [search, setSearch] = useState('');
-      const [category, setCategory] = useState('Alle');
-
       const categories = ['Alle', 'Architectuur', 'Constructie', 'Berekeningen', 'Staal', 'Hout', 'Voorschriften', 'Klassiek'];
+
+      // Lees categorie uit URL hash
+      const getCategoryFromHash = () => {
+        const hash = window.location.hash.slice(1).toLowerCase();
+        if (!hash) return 'Alle';
+        const found = categories.find(c => c.toLowerCase() === hash);
+        return found || 'Alle';
+      };
+
+      const [category, setCategory] = useState(getCategoryFromHash);
+
+      // Update URL hash bij categorie wijziging
+      const handleCategoryChange = (cat) => {
+        setCategory(cat);
+        if (cat === 'Alle') {
+          history.pushState(null, '', window.location.pathname);
+        } else {
+          history.pushState(null, '', `#${cat.toLowerCase()}`);
+        }
+      };
+
+      // Luister naar browser back/forward
+      useEffect(() => {
+        const handleHashChange = () => setCategory(getCategoryFromHash());
+        window.addEventListener('hashchange', handleHashChange);
+        window.addEventListener('popstate', handleHashChange);
+        return () => {
+          window.removeEventListener('hashchange', handleHashChange);
+          window.removeEventListener('popstate', handleHashChange);
+        };
+      }, []);
 
       const filteredBooks = booksData.filter(b => {
         const matchCat = category === 'Alle' || b.category === category;
@@ -479,10 +508,10 @@
           {/* Categories */}
           <section className="category-filter" style={{ padding: '0 2rem 2rem', display: 'flex', justifyContent: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
             {categories.map(cat => (
-              <button key={cat} onClick={() => setCategory(cat)}
-                style={{ padding: '0.5rem 1rem', background: category === cat ? 'linear-gradient(135deg, #8B7355 0%, #6B5344 100%)' : 'transparent', border: category === cat ? 'none' : '1px solid rgba(139,115,85,0.3)', borderRadius: '24px', color: category === cat ? '#FFF' : '#A89070', fontFamily: 'DM Sans, sans-serif', fontSize: '0.85rem', fontWeight: 500, cursor: 'pointer', transition: 'all 0.3s' }}>
+              <a key={cat} href={cat === 'Alle' ? '#' : `#${cat.toLowerCase()}`} onClick={(e) => { e.preventDefault(); handleCategoryChange(cat); }}
+                style={{ padding: '0.5rem 1rem', background: category === cat ? 'linear-gradient(135deg, #8B7355 0%, #6B5344 100%)' : 'transparent', border: category === cat ? 'none' : '1px solid rgba(139,115,85,0.3)', borderRadius: '24px', color: category === cat ? '#FFF' : '#A89070', fontFamily: 'DM Sans, sans-serif', fontSize: '0.85rem', fontWeight: 500, cursor: 'pointer', transition: 'all 0.3s', textDecoration: 'none' }}>
                 {cat}
-              </button>
+              </a>
             ))}
           </section>
 
