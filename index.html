@@ -170,6 +170,13 @@
       const [currentPage, setCurrentPage] = useState(0);
       const [imageLoaded, setImageLoaded] = useState(false);
       const [downloadProgress, setDownloadProgress] = useState(null);
+      const [zoom, setZoom] = useState(1);
+      const [position, setPosition] = useState({ x: 0, y: 0 });
+      const [isDragging, setIsDragging] = useState(false);
+      const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+      const containerRef = React.useRef(null);
+
+      const zoomLevels = [0.5, 0.75, 1, 1.25, 1.5, 2, 3];
 
       useEffect(() => {
         setLoading(true);
@@ -179,14 +186,42 @@
       useEffect(() => {
         const handleKey = (e) => {
           if (e.key === 'Escape') onClose();
-          if (e.key === 'ArrowRight') setCurrentPage(p => Math.min(p + 1, files.length - 1));
-          if (e.key === 'ArrowLeft') setCurrentPage(p => Math.max(p - 1, 0));
+          if (e.key === 'ArrowRight') { setCurrentPage(p => Math.min(p + 1, files.length - 1)); resetZoom(); }
+          if (e.key === 'ArrowLeft') { setCurrentPage(p => Math.max(p - 1, 0)); resetZoom(); }
+          if (e.key === '+' || e.key === '=') zoomIn();
+          if (e.key === '-') zoomOut();
+          if (e.key === '0') resetZoom();
         };
         window.addEventListener('keydown', handleKey);
         return () => window.removeEventListener('keydown', handleKey);
       }, [files.length, onClose]);
 
-      useEffect(() => setImageLoaded(false), [currentPage]);
+      useEffect(() => { setImageLoaded(false); resetZoom(); }, [currentPage]);
+
+      const resetZoom = () => { setZoom(1); setPosition({ x: 0, y: 0 }); };
+      const zoomIn = () => { const idx = zoomLevels.findIndex(z => z >= zoom); setZoom(zoomLevels[Math.min(idx + 1, zoomLevels.length - 1)]); };
+      const zoomOut = () => { const idx = zoomLevels.findIndex(z => z >= zoom); setZoom(zoomLevels[Math.max(idx - 1, 0)]); setPosition({ x: 0, y: 0 }); };
+
+      const handleWheel = (e) => {
+        e.preventDefault();
+        if (e.deltaY < 0) zoomIn();
+        else zoomOut();
+      };
+
+      const handleMouseDown = (e) => {
+        if (zoom > 1) {
+          setIsDragging(true);
+          setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
+        }
+      };
+
+      const handleMouseMove = (e) => {
+        if (isDragging && zoom > 1) {
+          setPosition({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
+        }
+      };
+
+      const handleMouseUp = () => setIsDragging(false);
 
       return (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,12,8,0.98)', zIndex: 100, display: 'flex', flexDirection: 'column', animation: 'fadeIn 0.3s ease' }}>
@@ -197,6 +232,13 @@
               <p style={{ color: '#A89070', fontSize: '0.9rem' }}>{book.author} - {book.year}</p>
             </div>
             <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+              {/* Zoom controls */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', background: 'rgba(139,115,85,0.2)', borderRadius: '2rem', padding: '0.25rem', border: '1px solid rgba(139,115,85,0.3)' }}>
+                <button onClick={zoomOut} style={{ width: '32px', height: '32px', background: 'transparent', border: 'none', color: '#F5E6D3', cursor: 'pointer', fontSize: '1.2rem', borderRadius: '50%' }}>-</button>
+                <span style={{ color: '#A89070', fontSize: '0.8rem', minWidth: '45px', textAlign: 'center' }}>{Math.round(zoom * 100)}%</span>
+                <button onClick={zoomIn} style={{ width: '32px', height: '32px', background: 'transparent', border: 'none', color: '#F5E6D3', cursor: 'pointer', fontSize: '1.2rem', borderRadius: '50%' }}>+</button>
+                <button onClick={resetZoom} style={{ padding: '0.25rem 0.5rem', background: 'transparent', border: 'none', color: '#A89070', cursor: 'pointer', fontSize: '0.75rem' }}>Fit</button>
+              </div>
               <button onClick={() => downloadAsZip(book, setDownloadProgress)} disabled={downloadProgress !== null}
                 style={{ padding: '0.5rem 1rem', background: downloadProgress !== null ? 'rgba(139,115,85,0.1)' : 'rgba(46,125,50,0.3)', borderRadius: '2rem', border: '1px solid rgba(46,125,50,0.5)', color: '#A8C8A0', cursor: downloadProgress !== null ? 'default' : 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontFamily: 'DM Sans, sans-serif' }}>
                 {downloadProgress !== null ? `Downloaden... ${downloadProgress}%` : 'Download ZIP'}
@@ -225,7 +267,8 @@
             </div>
 
             {/* Image viewer */}
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', position: 'relative' }}>
+            <div ref={containerRef} onWheel={handleWheel} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}
+              style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', position: 'relative', overflow: 'hidden', cursor: zoom > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default' }}>
               {loading ? (
                 <div style={{ textAlign: 'center' }}>
                   <div style={{ width: '50px', height: '50px', border: '3px solid rgba(139,115,85,0.2)', borderTopColor: '#8B7355', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto' }} />
@@ -235,16 +278,17 @@
                 <>
                   <img src={files[currentPage]?.url} alt={files[currentPage]?.name}
                     onLoad={() => setImageLoaded(true)}
-                    style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', opacity: imageLoaded ? 1 : 0, transition: 'opacity 0.3s', boxShadow: '0 4px 20px rgba(0,0,0,0.5)' }} />
+                    draggable={false}
+                    style={{ maxWidth: zoom === 1 ? '100%' : 'none', maxHeight: zoom === 1 ? '100%' : 'none', width: zoom !== 1 ? `${zoom * 100}%` : 'auto', objectFit: 'contain', opacity: imageLoaded ? 1 : 0, transition: isDragging ? 'none' : 'opacity 0.3s, transform 0.2s', boxShadow: '0 4px 20px rgba(0,0,0,0.5)', transform: `translate(${position.x}px, ${position.y}px)`, userSelect: 'none' }} />
                   {!imageLoaded && <div style={{ position: 'absolute', width: '40px', height: '40px', border: '3px solid rgba(139,115,85,0.2)', borderTopColor: '#8B7355', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />}
 
                   {/* Navigation arrows */}
-                  <button onClick={() => setCurrentPage(p => Math.max(0, p - 1))} disabled={currentPage === 0}
-                    style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', width: '48px', height: '48px', borderRadius: '50%', background: currentPage === 0 ? 'rgba(139,115,85,0.1)' : 'rgba(139,115,85,0.3)', border: 'none', cursor: currentPage === 0 ? 'default' : 'pointer', color: '#F5E6D3', fontSize: '1.5rem' }}>
+                  <button onClick={(e) => { e.stopPropagation(); setCurrentPage(p => Math.max(0, p - 1)); resetZoom(); }} disabled={currentPage === 0}
+                    style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', width: '48px', height: '48px', borderRadius: '50%', background: currentPage === 0 ? 'rgba(139,115,85,0.1)' : 'rgba(139,115,85,0.3)', border: 'none', cursor: currentPage === 0 ? 'default' : 'pointer', color: '#F5E6D3', fontSize: '1.5rem', zIndex: 10 }}>
                     &#8249;
                   </button>
-                  <button onClick={() => setCurrentPage(p => Math.min(files.length - 1, p + 1))} disabled={currentPage === files.length - 1}
-                    style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', width: '48px', height: '48px', borderRadius: '50%', background: currentPage === files.length - 1 ? 'rgba(139,115,85,0.1)' : 'rgba(139,115,85,0.3)', border: 'none', cursor: currentPage === files.length - 1 ? 'default' : 'pointer', color: '#F5E6D3', fontSize: '1.5rem' }}>
+                  <button onClick={(e) => { e.stopPropagation(); setCurrentPage(p => Math.min(files.length - 1, p + 1)); resetZoom(); }} disabled={currentPage === files.length - 1}
+                    style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', width: '48px', height: '48px', borderRadius: '50%', background: currentPage === files.length - 1 ? 'rgba(139,115,85,0.1)' : 'rgba(139,115,85,0.3)', border: 'none', cursor: currentPage === files.length - 1 ? 'default' : 'pointer', color: '#F5E6D3', fontSize: '1.5rem', zIndex: 10 }}>
                     &#8250;
                   </button>
                 </>
