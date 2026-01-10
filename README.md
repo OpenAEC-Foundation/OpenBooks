@@ -9,8 +9,9 @@ Het is begonnen uit frustratie omdat ik zelf jarenlang gezocht heb naar de boeke
 * Daardoor is de kennis die hierin staat helaas niet meer te gebruiken door Ingenieurs, Architecten en Bouwmeesters. 
 
 # Gebruik
-Bekijk de afbeeldingen via Github. Of download de gehele collectie via deze link: https://github.com/DutchSailor/OpenBooks/archive/refs/heads/main.zip
-Er komt in de toekomst een fatsoenlijke website waarbij de scans doorzoekbaar zijn en uitgesneden. Het is nu nog het ruwe scanmateriaal.
+Bekijk de collectie via de website: https://openaec-foundation.github.io/OpenBooks/
+
+Of bekijk de afbeeldingen via Github. Of download de gehele collectie via deze link: https://github.com/DutchSailor/OpenBooks/archive/refs/heads/main.zip
 
 # Rechten
 * Het is soms erg lastig om te achterhalen of er auteursrechten op de boeken zitten.
