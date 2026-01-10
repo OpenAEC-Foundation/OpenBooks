@@ -279,7 +279,7 @@
                   <img src={files[currentPage]?.url} alt={files[currentPage]?.name}
                     onLoad={() => setImageLoaded(true)}
                     draggable={false}
-                    style={{ maxWidth: zoom === 1 ? '100%' : 'none', maxHeight: zoom === 1 ? '100%' : 'none', width: zoom !== 1 ? `${zoom * 100}%` : 'auto', objectFit: 'contain', opacity: imageLoaded ? 1 : 0, transition: isDragging ? 'none' : 'opacity 0.3s, transform 0.2s', boxShadow: '0 4px 20px rgba(0,0,0,0.5)', transform: `translate(${position.x}px, ${position.y}px)`, userSelect: 'none' }} />
+                    style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', opacity: imageLoaded ? 1 : 0, transition: isDragging ? 'none' : 'opacity 0.3s, transform 0.2s', boxShadow: '0 4px 20px rgba(0,0,0,0.5)', transform: `scale(${zoom}) translate(${position.x / zoom}px, ${position.y / zoom}px)`, userSelect: 'none' }} />
                   {!imageLoaded && <div style={{ position: 'absolute', width: '40px', height: '40px', border: '3px solid rgba(139,115,85,0.2)', borderTopColor: '#8B7355', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />}
 
                   {/* Navigation arrows */}
